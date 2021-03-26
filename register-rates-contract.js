@@ -1,21 +1,38 @@
-//v0.16 = CeSNCJDJD5qHziBjSGWfvsd8LLeeBzrSrYpvYN5e3Qoy
+//v0.18 = r2bSyugQdpebc8vRPF1oLaCdoJgxYF3zqp6GyEGBqHh
 
 const Dash = require('dash');
 const secrets =require('./secrets.js');
 
 const clientOpts = {
-    network: 'evonet',
+    network: 'testnet',
     wallet: {
-      mnemonic: secrets.mnemonic
-    }
-  };
+      mnemonic: secrets.mnemonic,
+      unsafeOptions: {
+        skipSynchronizationBeforeHeight: 415000, // only sync from start of 2021
+      }
+    },
+    dapiAddresses: [
+      '34.220.41.134:3000',
+      '18.236.216.191:3000',
+      '54.191.227.118:3000'
+    ]
+};
+
 const client = new Dash.Client(clientOpts);
 
 const registerContract = async function () {
   try {
-    const platform = client.platform;
-    const identity = await platform.identities.get('5Qhw9CyVjzdbDi4PhSTYQf4LHvThRmeVVjPnarmToJEt');
+    client.account = await client.getWalletAccount();
+    let identity
+    let identityId = client.account.identities.getIdentityIds()[0];
+    console.log('identityId :>> ', identityId);
     
+    if (!identityId)
+      identity = await client.platform.identities.register();
+    else 
+     identity = await client.platform.identities.get(identityId) 
+   console.log(identity) 
+
     const contractDocuments = {
       rate: {
         properties: {
@@ -72,22 +89,11 @@ const registerContract = async function () {
         ]
       }};
     
-    const contract = await platform.contracts.create(contractDocuments, identity);
+    const contract = await client.platform.contracts.create(contractDocuments, identity);
     console.dir({contract});
-
-    // Make sure contract passes validation checks
-    const validationResult = await platform.dpp.dataContract.validate(contract);
-
-    if (validationResult.isValid()) {
-      console.log("validation passed, broadcasting contract..");
-      // Sign and submit the data contract
-      await platform.contracts.broadcast(contract, identity);
-      console.log('contract id:', contract.getId().toString());
-    } else {
-      console.error(validationResult) // An array of detailed validation errors
-      throw validationResult.errors[0];
-    }
-    
+    // Sign and submit the data contract
+    await client.platform.contracts.broadcast(contract, identity);
+    console.log('contract id:', contract.getId().toString());
   } catch (e) {
     console.error('Something went wrong:', e);
   } finally {

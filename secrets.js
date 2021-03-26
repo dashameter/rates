@@ -1,3 +1,3 @@
 module.exports = {
-    mnemonic:'mesh head vapor execute sister junior bundle interest leisure orient west six' // 0.16
+    mnemonic:'fly over fix position winter quarter turkey napkin similar trouble confirm blur' // 0.18 testnet
 };
